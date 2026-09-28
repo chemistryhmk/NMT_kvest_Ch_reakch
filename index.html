@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Room: Таємниця Хімічної Лабораторії (НМТ Hard Mode)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;700&family=Exo+2:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #030712;
+            --panel-bg: rgba(15, 23, 42, 0.94);
+            --neon-cyan: #00f0ff;
+            --neon-green: #10b981;
+            --neon-amber: #f59e0b;
+            --neon-red: #ef4444;
+            --neon-purple: #a855f7;
+            --lab-fluid-color: #00f0ff;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.07) 0%, transparent 60%),
+                linear-gradient(rgba(15, 23, 42, 0.85) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(15, 23, 42, 0.85) 1px, transparent 1px);
+            background-size: 100% 100%, 25px 25px, 25px 25px;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            letter-spacing: -0.01em;
+        }
+
+        .font-tech { font-family: 'Exo 2', sans-serif; }
+        .font-code { font-family: 'Fira Code', monospace; }
+
+        /* Laboratory Frame Styling */
+        .lab-border {
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            background: var(--panel-bg);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 240, 255, 0.03);
+            backdrop-filter: blur(14px);
+            position: relative;
+        }
+
+        .lab-border::before, .lab-border::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-color: var(--neon-cyan);
+            border-style: solid;
+            pointer-events: none;
+        }
+        .lab-border::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+        .lab-border::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+        .text-glow-cyan { color: var(--neon-cyan); text-shadow: 0 0 12px rgba(0, 240, 255, 0.5); }
+        .text-glow-red { color: var(--neon-red); text-shadow: 0 0 12px rgba(239, 68, 68, 0.5); }
+        .text-glow-green { color: var(--neon-green); text-shadow: 0 0 12px rgba(16, 185, 129, 0.5); }
+
+        /* Interactive Flask Visualizer */
+        .flask-container {
+            position: relative;
+            width: 130px;
+            height: 150px;
+            margin: 0 auto;
+        }
+        .flask-glass {
+            clip-path: polygon(38% 0%, 62% 0%, 62% 35%, 100% 88%, 92% 100%, 8% 100%, 0% 88%, 38% 35%);
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.15);
+        }
+        .flask-liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 55%;
+            background: linear-gradient(180deg, var(--lab-fluid-color) 0%, rgba(16, 185, 129, 0.85) 100%);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0.9;
+            box-shadow: 0 0 25px var(--lab-fluid-color);
+        }
+        .bubble {
+            position: absolute;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: floatUp 2s infinite ease-in;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.3); opacity: 0; }
+            50% { opacity: 0.9; }
+            100% { transform: translateY(-90px) scale(1.1); opacity: 0; }
+        }
+
+        /* Valve & Gauge Elements */
+        .gauge-dial {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid rgba(0, 240, 255, 0.5);
+            position: relative;
+            background: radial-gradient(circle, rgba(15, 23, 42, 0.95) 0%, rgba(3, 7, 18, 0.98) 100%);
+        }
+        .gauge-needle {
+            width: 3px;
+            height: 32px;
+            background: var(--neon-red);
+            position: absolute;
+            bottom: 50%;
+            left: calc(50% - 1.5px);
+            transform-origin: bottom center;
+            transition: transform 0.5s ease-out;
+            box-shadow: 0 0 8px var(--neon-red);
+            border-radius: 2px;
+        }
+
+        /* Buttons & Interactions */
+        .btn-lab {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.5);
+            color: var(--neon-cyan);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            font-weight: 700;
+        }
+        .btn-lab:hover {
+            background: rgba(0, 240, 255, 0.2);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+            transform: translateY(-1px);
+        }
+        .btn-lab:active { transform: translateY(1px); }
+
+        .btn-choice {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1.5px solid rgba(75, 85, 99, 0.45);
+            transition: all 0.2s ease;
+            color: #f1f5f9;
+            font-weight: 600;
+        }
+        .btn-choice:hover {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.12);
+            color: #ffffff;
+        }
+        .btn-choice.active {
+            border-color: var(--neon-cyan) !important;
+            background: rgba(0, 240, 255, 0.22) !important;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            color: #ffffff;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #030712; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+
+        .game-screen { display: none; opacity: 0; transition: opacity 0.35s ease; }
+        .game-screen.active { display: flex; opacity: 1; }
+
+        /* Keypad Styles */
+        .keypad-btn {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #00f0ff;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 1.35rem;
+            transition: all 0.15s;
+        }
+        .keypad-btn:hover {
+            background: rgba(0, 240, 255, 0.25);
+            border-color: #00f0ff;
+        }
+    </style>
+</head>
+<body class="p-3 md:p-6 flex flex-col justify-between min-h-screen">
+
+    <!-- TOP NAVIGATION HUD -->
+    <header id="game-hud" class="max-w-7xl mx-auto w-full mb-4 hidden flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/90 p-4 rounded-2xl border border-cyan-800/80 backdrop-blur-md shadow-xl">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-2xl shadow-inner shadow-cyan-500/40">
+                🧪
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-tech font-bold text-glow-cyan tracking-wide">СЕКТОР ХІМІЧНОГО ЗАХИСТУ</h1>
+                <p class="text-xs md:text-sm text-slate-300 font-semibold">ОПЕРАТОР: <span id="hud-player-name" class="text-cyan-300 font-bold">ДОСЛІДНИК</span></p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <!-- Timer Display -->
+            <div class="bg-slate-950 px-5 py-2.5 rounded-xl border border-red-800 flex items-center gap-3 shadow-inner">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">КИСЕНЬ:</span>
+                <span id="timer-display" class="font-code text-2xl font-bold text-red-500 tracking-wider">20:00</span>
+            </div>
+
+            <!-- Collected Code Display -->
+            <div class="bg-slate-950 px-5 py-2.5 rounded-xl border border-cyan-800 flex items-center gap-3 shadow-inner">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">ШИФР ШЛЮЗУ:</span>
+                <div id="code-hud-container" class="flex gap-2 font-code text-2xl font-bold text-cyan-300">
+                    <span class="w-7 text-center border-b-2 border-cyan-400">_</span>
+                    <span class="w-7 text-center border-b-2 border-cyan-400">_</span>
+                    <span class="w-7 text-center border-b-2 border-cyan-400">_</span>
+                    <span class="w-7 text-center border-b-2 border-cyan-400">_</span>
+                    <span class="w-7 text-center border-b-2 border-cyan-400">_</span>
+                </div>
+            </div>
+            
+            <!-- Sound Toggle -->
+            <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2.5 bg-slate-800 hover:bg-slate-700 rounded-xl border border-slate-600 text-lg transition" title="Звукові ефекти">
+                🔊
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN GAME CONTAINER -->
+    <main class="max-w-7xl mx-auto w-full flex-grow flex flex-col justify-center my-auto py-2">
+
+        <!-- SCREEN 0: INTRO / BRIEFING -->
+        <section id="screen-intro" class="game-screen active flex-col items-center">
+            <div class="lab-border p-8 md:p-12 rounded-2xl w-full max-w-4xl text-center space-y-8">
+                <div class="relative inline-block">
+                    <div class="w-28 h-28 mx-auto rounded-full bg-cyan-950/90 border-2 border-cyan-400 flex items-center justify-center text-6xl shadow-xl shadow-cyan-500/30">
+                        ☣️
+                    </div>
+                    <span class="absolute -bottom-1 -right-1 bg-red-600 text-white text-xs px-3 py-1 rounded-full font-bold uppercase tracking-wider animate-pulse">ЗБІЙ</span>
+                </div>
+
+                <div>
+                    <h1 class="text-3xl md:text-5xl font-tech font-extrabold text-glow-cyan tracking-wide mb-3">АВАРІЙНИЙ ЛАБОРАТОРНИЙ БЛОК</h1>
+                    <p class="text-cyan-400 font-semibold text-base md:text-lg">НМТ HARD MODE: ТЕРМОДИНАМІКА, КІНЕТИКА ТА СИНТЕЗ</p>
+                </div>
+
+                <div class="bg-slate-950/90 p-6 md:p-8 rounded-xl border border-slate-800 text-left text-base md:text-lg space-y-4 leading-relaxed text-slate-200 shadow-inner">
+                    <p class="text-cyan-300 font-bold flex items-center gap-2 text-xl">
+                        <span>📋</span> ПРОТОКОЛ БЕЗПЕКИ №404:
+                    </p>
+                    <p>
+                        У реакторі синтезу сталася розгерметизація. Автоматичні захисні заслонки заблокували вихід з лабораторного комплексу.
+                    </p>
+                    <p class="text-amber-300 font-medium">
+                        Щоб зняти блокування, необхідно послідовно розв'язати інтерактивні завдання <b>5 дослідницьких шлюзів</b> і зібрати <b>5 цифр аварійного шифру</b>.
+                    </p>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center justify-center gap-5 pt-4">
+                    <input type="text" id="player-name-input" placeholder="ПОЗИВНИЙ ДОСЛІДНИКА" class="w-full md:w-80 px-6 py-4 bg-slate-950 border-2 border-cyan-800 rounded-xl text-center font-bold text-cyan-300 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400 uppercase tracking-widest text-lg">
+                    <button onclick="startGame()" class="btn-lab font-tech font-bold px-10 py-4 rounded-xl text-xl flex items-center justify-center gap-3 w-full md:w-auto">
+                        <span>РОЗПОЧАТИ ВТЕЧУ</span>
+                        <span>⚡</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 1: SECTOR 1 (THERMOCHEMISTRY) -->
+        <section id="screen-sector-1" class="game-screen flex-col">
+            <div class="lab-border p-6 md:p-8 rounded-2xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Visual Apparatus Panel -->
+                <div class="lg:col-span-5 bg-slate-950/90 rounded-xl p-6 border border-slate-800 flex flex-col items-center justify-between min-h-[290px]">
+                    <div class="w-full flex justify-between items-center text-xs md:text-sm font-semibold text-slate-300">
+                        <span>ТЕРМОСКАНЕР: <span id="s1-temp-readout" class="text-cyan-400 font-bold">25°C</span></span>
+                        <span id="s1-status-tag" class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-bold">АКТИВНИЙ</span>
+                    </div>
+
+                    <!-- Interactive Flask -->
+                    <div class="my-4">
+                        <div class="flask-container">
+                            <div class="flask-glass">
+                                <div id="s1-liquid" class="flask-liquid">
+                                    <div class="bubble" style="left: 20%; width: 8px; height: 8px; animation-delay: 0s;"></div>
+                                    <div class="bubble" style="left: 50%; width: 6px; height: 6px; animation-delay: 0.7s;"></div>
+                                    <div class="bubble" style="left: 70%; width: 10px; height: 10px; animation-delay: 1.2s;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center text-sm text-slate-300 font-medium">
+                        <p id="s1-reaction-type-hint">Визначте тепловий ефект реакції в колбі</p>
+                    </div>
+                </div>
+
+                <!-- Problem Console Panel -->
+                <div class="lg:col-span-7 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="font-tech text-xl md:text-2xl font-bold text-glow-cyan">ШЛЮЗ 1: ТЕРМОХІМІЧНИЙ РЕАКТОР</h2>
+                            <span id="s1-step-indicator" class="font-bold text-xs md:text-sm bg-slate-800 px-3.5 py-1 rounded-full text-cyan-300 border border-slate-700">ЕТАП 1/4</span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-900 h-2 rounded-full mb-6 overflow-hidden">
+                            <div id="s1-progress-bar" class="bg-cyan-400 h-full w-1/4 transition-all duration-300"></div>
+                        </div>
+
+                        <!-- Equation Display Box -->
+                        <div class="bg-slate-950 p-6 rounded-xl border border-cyan-900/80 text-center mb-6 shadow-inner">
+                            <span class="text-xs md:text-sm font-bold text-slate-400 block mb-2 uppercase tracking-wider">РІВНЯННЯ РЕАКЦІЇ:</span>
+                            <div id="s1-equation-display" class="text-xl md:text-3xl font-code text-white font-bold tracking-wide">
+                                <!-- Replaced dynamically -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Choices -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button onclick="submitSector1('exo')" class="btn-choice p-5 rounded-xl flex items-center justify-between group">
+                            <div class="text-left">
+                                <span class="block font-tech font-bold text-amber-400 group-hover:text-amber-300 text-xl">ЕКЗОТЕРМІЧНА</span>
+                                <span class="text-xs md:text-sm text-slate-300 font-medium">Виділення теплоти (+Q, ΔH &lt; 0)</span>
+                            </div>
+                            <span class="text-3xl">🔥</span>
+                        </button>
+
+                        <button onclick="submitSector1('endo')" class="btn-choice p-5 rounded-xl flex items-center justify-between group">
+                            <div class="text-left">
+                                <span class="block font-tech font-bold text-cyan-400 group-hover:text-cyan-300 text-xl">ЕНДОТЕРМІЧНА</span>
+                                <span class="text-xs md:text-sm text-slate-300 font-medium">Поглинання теплоти (-Q, ΔH &gt; 0)</span>
+                            </div>
+                            <span class="text-3xl">❄️</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 2: SECTOR 2 (KINETICS) -->
+        <section id="screen-sector-2" class="game-screen flex-col">
+            <div class="lab-border p-5 md:p-7 rounded-2xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                <!-- Visual Particle Collision Chamber -->
+                <div class="lg:col-span-5 bg-slate-950/90 rounded-xl p-5 border border-slate-800 flex flex-col justify-between items-center min-h-[300px]">
+                    <div class="w-full flex justify-between items-center text-xs md:text-sm font-bold text-slate-300 mb-1">
+                        <span class="tracking-wider uppercase font-tech text-cyan-400">КІНЕТИЧНИЙ СИМУЛЯТОР</span>
+                        <span id="s2-speed-label" class="text-emerald-400 font-bold text-xs md:text-sm bg-emerald-950/80 px-2.5 py-1 rounded border border-emerald-700">ШВИДКІСТЬ: x1.0</span>
+                    </div>
+
+                    <!-- Animated Canvas Chamber -->
+                    <div class="w-full h-56 lg:h-full min-h-[220px] bg-slate-950 border-2 border-cyan-900/80 rounded-xl overflow-hidden relative my-3 shadow-inner">
+                        <canvas id="kinetic-canvas" class="w-full h-full block"></canvas>
+                    </div>
+
+                    <div class="text-center text-xs md:text-sm text-slate-300 font-medium">
+                        Симуляція руху та зіткнення реагуючих молекул у камері
+                    </div>
+                </div>
+
+                <!-- Console Panel -->
+                <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="font-tech text-xl md:text-2xl text-glow-cyan font-bold tracking-wide">ШЛЮЗ 2: КІНЕТИЧНИЙ ПРИСКОРЮВАЧ</h2>
+                            <span id="s2-step-indicator" class="font-bold text-xs md:text-sm bg-slate-800 px-3.5 py-1 rounded-full text-cyan-300 border border-slate-700">ЕТАП 1/3</span>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-900 h-2 rounded-full mb-4 overflow-hidden">
+                            <div id="s2-progress-bar" class="bg-cyan-400 h-full w-1/3 transition-all duration-300"></div>
+                        </div>
+
+                        <!-- Reaction & Question Box -->
+                        <div class="bg-slate-950/90 p-5 rounded-xl border border-cyan-900/70 mb-4 shadow-sm">
+                            <div id="s2-equation-display" class="text-xl md:text-2xl font-code text-cyan-300 font-bold mb-3 text-center tracking-wide"></div>
+                            <p id="s2-question-text" class="text-slate-100 font-bold text-base md:text-lg leading-relaxed"></p>
+                        </div>
+                    </div>
+
+                    <!-- Options List -->
+                    <div id="s2-options-container" class="space-y-3"></div>
+
+                    <button onclick="submitSector2()" class="btn-lab font-tech font-bold py-4 px-6 rounded-xl w-full text-lg tracking-wider uppercase mt-2 shadow-md">
+                        ПІДТВЕРДИТИ АНАЛІЗ КІНЕТИКИ
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 3: SECTOR 3 (CHEMICAL EQUILIBRIUM) -->
+        <section id="screen-sector-3" class="game-screen flex-col">
+            <div class="lab-border p-5 md:p-7 rounded-2xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                <!-- Visual Pressure & Temp Gauges -->
+                <div class="lg:col-span-4 bg-slate-950/90 rounded-xl p-5 border border-slate-800 flex flex-col justify-between items-center">
+                    <span class="text-xs md:text-sm uppercase tracking-wider font-tech text-slate-300 font-bold w-full text-left">ПАНЕЛЬ ЛЕ ШАТЕЛЬЄ</span>
+
+                    <div class="flex gap-6 my-4">
+                        <!-- Temp Dial -->
+                        <div class="flex flex-col items-center">
+                            <div class="gauge-dial flex items-center justify-center">
+                                <div id="gauge-temp-needle" class="gauge-needle" style="transform: rotate(0deg);"></div>
+                            </div>
+                            <span class="text-xs font-bold text-slate-300 mt-2">ТЕМПЕРАТУРА</span>
+                        </div>
+
+                        <!-- Pressure Dial -->
+                        <div class="flex flex-col items-center">
+                            <div class="gauge-dial flex items-center justify-center">
+                                <div id="gauge-press-needle" class="gauge-needle" style="transform: rotate(0deg);"></div>
+                            </div>
+                            <span class="text-xs font-bold text-slate-300 mt-2">ТИСК</span>
+                        </div>
+                    </div>
+
+                    <div class="w-full bg-slate-900/90 p-3 rounded-lg border border-slate-800 text-center text-xs md:text-sm text-cyan-300 font-bold">
+                        <span id="s3-target-hint">МЕТА: Змістити рівновагу праворуч</span>
+                    </div>
+                </div>
+
+                <!-- Interactive Control Console -->
+                <div class="lg:col-span-8 flex flex-col justify-between space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="font-tech text-xl md:text-2xl text-glow-cyan font-bold">ШЛЮЗ 3: СТАБІЛІЗАТОР РІВНОВАГИ</h2>
+                            <span id="s3-step-indicator" class="font-bold text-xs md:text-sm bg-slate-800 px-3.5 py-1 rounded-full text-cyan-300 border border-slate-700">ЕТАП 1/3</span>
+                        </div>
+
+                        <div class="w-full bg-slate-900 h-2 rounded-full mb-4 overflow-hidden">
+                            <div id="s3-progress-bar" class="bg-cyan-400 h-full w-1/3 transition-all duration-300"></div>
+                        </div>
+
+                        <!-- Reaction Display -->
+                        <div class="bg-slate-950 p-5 rounded-xl border border-cyan-900/70 text-center mb-4">
+                            <div id="s3-equation-display" class="text-lg md:text-xl font-code text-white font-bold"></div>
+                        </div>
+                    </div>
+
+                    <!-- Parameter Controllers -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-2">
+                        <!-- Temp Control -->
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 text-center">
+                            <span class="text-xs font-bold text-slate-300 block mb-3 uppercase tracking-wider">Температура</span>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="setSector3Param('temp', 'up')" id="s3-btn-t-up" class="btn-choice py-2.5 rounded-lg text-xs md:text-sm">↑ ПІДВИЩИТИ</button>
+                                <button onclick="setSector3Param('temp', 'down')" id="s3-btn-t-down" class="btn-choice py-2.5 rounded-lg text-xs md:text-sm">↓ ЗНИЗИТИ</button>
+                            </div>
+                        </div>
+
+                        <!-- Pressure Control -->
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 text-center">
+                            <span class="text-xs font-bold text-slate-300 block mb-3 uppercase tracking-wider">Тиск в системі</span>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="setSector3Param('press', 'up')" id="s3-btn-p-up" class="btn-choice py-2.5 rounded-lg text-xs md:text-sm">↑ ПІДВИЩИТИ</button>
+                                <button onclick="setSector3Param('press', 'down')" id="s3-btn-p-down" class="btn-choice py-2.5 rounded-lg text-xs md:text-sm">↓ ЗНИЗИТИ</button>
+                                <button onclick="setSector3Param('press', 'none')" id="s3-btn-p-none" class="btn-choice py-2 rounded-lg text-xs text-slate-300">НЕ ВПЛИВАЄ</button>
+                            </div>
+                        </div>
+
+                        <!-- Catalyst Control -->
+                        <div class="bg-slate-950/70 p-4 rounded-xl border border-slate-800 text-center">
+                            <span class="text-xs font-bold text-slate-300 block mb-3 uppercase tracking-wider">Каталізатор</span>
+                            <div class="flex flex-col gap-2">
+                                <button onclick="setSector3Param('cat', 'yes')" id="s3-btn-c-yes" class="btn-choice py-2.5 rounded-lg text-xs md:text-sm">ДОДАТИ</button>
+                                <button onclick="setSector3Param('cat', 'no')" id="s3-btn-c-no" class="btn-choice py-2.5 rounded-lg text-xs md:text-sm">БЕЗ КАТАЛІЗАТОРА</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="submitSector3()" class="btn-lab font-tech font-bold py-4 rounded-xl w-full text-lg tracking-wider uppercase">
+                        ЗАКРІПИТИ ПАРАМЕТРИ РІВНОВАГИ
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 4: SECTOR 4 (CALCULATIONS) -->
+        <section id="screen-sector-4" class="game-screen flex-col">
+            <div class="lab-border p-6 md:p-8 rounded-2xl w-full max-w-3xl mx-auto flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="font-tech text-xl md:text-2xl text-glow-cyan font-bold">ШЛЮЗ 4: ОБЧИСЛЮВАЛЬНЕ ЯДРО</h2>
+                        <span id="s4-step-indicator" class="font-bold text-xs md:text-sm bg-slate-800 px-3.5 py-1 rounded-full text-cyan-300 border border-slate-700">ЕТАП 1/2</span>
+                    </div>
+
+                    <div class="w-full bg-slate-900 h-2 rounded-full mb-6 overflow-hidden">
+                        <div id="s4-progress-bar" class="bg-cyan-400 h-full w-1/2 transition-all duration-300"></div>
+                    </div>
+
+                    <div class="bg-slate-950 p-6 md:p-7 rounded-xl border border-cyan-900/80 text-base md:text-lg leading-relaxed text-slate-100 mb-8 font-medium shadow-inner" id="s4-task-box">
+                        <!-- Problem text inserted dynamically -->
+                    </div>
+                </div>
+
+                <div class="flex flex-col items-center gap-6">
+                    <div class="flex items-center gap-4">
+                        <input type="number" id="s4-answer-input" placeholder="000" class="w-48 px-5 py-3.5 bg-slate-950 border-2 border-cyan-700 rounded-xl font-code text-3xl text-center text-cyan-300 outline-none focus:border-cyan-400 shadow-inner">
+                        <span id="s4-unit-label" class="font-bold text-xl text-slate-300">кДж</span>
+                    </div>
+
+                    <button onclick="submitSector4()" class="btn-lab font-tech font-bold py-4 px-12 rounded-xl text-lg w-full md:w-auto">
+                        ВВЕСТИ ОБЧИСЛЕНИЙ РЕЗУЛЬТАТ
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 5: SECTOR 5 (MASTER SYNTHESIS & ANALYSIS - 3 TASKS) -->
+        <section id="screen-sector-5" class="game-screen flex-col">
+            <div class="lab-border p-6 md:p-8 rounded-2xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Visual Chemical Rack -->
+                <div class="lg:col-span-5 bg-slate-950/90 rounded-xl p-6 border border-slate-800 flex flex-col justify-between items-center min-h-[290px]">
+                    <span class="text-xs md:text-sm font-bold text-slate-300 w-full text-left uppercase tracking-wider">МОДУЛЬ СИНТЕЗУ ТА КЛАСИФІКАЦІЇ</span>
+                    
+                    <div class="my-4 text-center">
+                        <div class="text-6xl mb-3">🧪</div>
+                        <span id="s5-reaction-name" class="font-tech text-cyan-300 text-base md:text-lg font-bold block">РЕАКЦІЯ ЕСТЕРИФІКАЦІЇ</span>
+                    </div>
+
+                    <div class="w-full bg-slate-900 p-3.5 rounded-lg border border-slate-800 text-center text-sm font-bold text-amber-300" id="s5-condition-tag">
+                        Умова: Концентрована H2SO4, t°
+                    </div>
+                </div>
+
+                <!-- Multi-Task Options Console -->
+                <div class="lg:col-span-7 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="font-tech text-xl md:text-2xl text-glow-cyan font-bold">ШЛЮЗ 5: ПОВНИЙ АНАЛІЗ ПРОЦЕСІВ</h2>
+                            <span id="s5-step-indicator" class="font-bold text-xs md:text-sm bg-slate-800 px-3.5 py-1 rounded-full text-cyan-300 border border-slate-700">ЕТАП 1/3</span>
+                        </div>
+
+                        <div class="w-full bg-slate-900 h-2 rounded-full mb-6 overflow-hidden">
+                            <div id="s5-progress-bar" class="bg-cyan-400 h-full w-1/3 transition-all duration-300"></div>
+                        </div>
+
+                        <!-- Reaction Display -->
+                        <div class="bg-slate-950 p-5 rounded-xl border border-cyan-900/80 mb-5">
+                            <div id="s5-equation-display" class="text-lg md:text-xl font-code text-white font-bold text-center mb-2"></div>
+                            <p class="text-xs md:text-sm text-slate-300 font-semibold text-center">Оберіть повну та вичерпну характеристику даного хімічного процесу:</p>
+                        </div>
+                    </div>
+
+                    <div id="s5-options-container" class="space-y-3 mb-5"></div>
+
+                    <button onclick="submitSector5()" class="btn-lab font-tech font-bold py-4 rounded-xl w-full text-lg">
+                        ПІДТВЕРДИТИ ХАРАКТЕРИСТИКУ
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 6: FINAL KEYPAD DOOR LOCK TERMINAL -->
+        <section id="screen-final-code" class="game-screen flex-col items-center">
+            <div class="lab-border p-6 md:p-10 rounded-2xl w-full max-w-xl text-center space-y-6">
+                <div class="w-20 h-20 mx-auto rounded-full bg-cyan-950 border-2 border-cyan-400 flex items-center justify-center text-4xl shadow-lg shadow-cyan-500/40">
+                    🔒
+                </div>
+
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-tech font-bold text-glow-cyan">ГОЛОВНИЙ ШЛЮЗ ВТЕЧІ</h2>
+                    <p class="text-slate-300 font-semibold text-sm mt-2">ВВЕДІТЬ ЗІБРАНИЙ 5-ЗНАЧНИЙ АВАРІЙНИЙ КОД ДОСТУПУ</p>
+                </div>
+
+                <!-- Digital Code Screen -->
+                <div class="bg-slate-950 p-4 rounded-xl border-2 border-cyan-700 flex justify-center gap-3">
+                    <input type="text" readonly maxlength="1" id="kp-0" class="w-12 h-14 bg-slate-900 border border-cyan-500/60 rounded-lg text-center font-code text-3xl font-bold text-cyan-300">
+                    <input type="text" readonly maxlength="1" id="kp-1" class="w-12 h-14 bg-slate-900 border border-cyan-500/60 rounded-lg text-center font-code text-3xl font-bold text-cyan-300">
+                    <input type="text" readonly maxlength="1" id="kp-2" class="w-12 h-14 bg-slate-900 border border-cyan-500/60 rounded-lg text-center font-code text-3xl font-bold text-cyan-300">
+                    <input type="text" readonly maxlength="1" id="kp-3" class="w-12 h-14 bg-slate-900 border border-cyan-500/60 rounded-lg text-center font-code text-3xl font-bold text-cyan-300">
+                    <input type="text" readonly maxlength="1" id="kp-4" class="w-12 h-14 bg-slate-900 border border-cyan-500/60 rounded-lg text-center font-code text-3xl font-bold text-cyan-300">
+                </div>
+
+                <!-- Keypad Buttons -->
+                <div class="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+                    <button onclick="pressKeypad('1')" class="keypad-btn py-3 rounded-lg font-bold">1</button>
+                    <button onclick="pressKeypad('2')" class="keypad-btn py-3 rounded-lg font-bold">2</button>
+                    <button onclick="pressKeypad('3')" class="keypad-btn py-3 rounded-lg font-bold">3</button>
+                    <button onclick="pressKeypad('4')" class="keypad-btn py-3 rounded-lg font-bold">4</button>
+                    <button onclick="pressKeypad('5')" class="keypad-btn py-3 rounded-lg font-bold">5</button>
+                    <button onclick="pressKeypad('6')" class="keypad-btn py-3 rounded-lg font-bold">6</button>
+                    <button onclick="pressKeypad('7')" class="keypad-btn py-3 rounded-lg font-bold">7</button>
+                    <button onclick="pressKeypad('8')" class="keypad-btn py-3 rounded-lg font-bold">8</button>
+                    <button onclick="pressKeypad('9')" class="keypad-btn py-3 rounded-lg font-bold">9</button>
+                    <button onclick="clearKeypad()" class="keypad-btn py-3 rounded-lg font-bold text-red-400 text-sm">СКИД</button>
+                    <button onclick="pressKeypad('0')" class="keypad-btn py-3 rounded-lg font-bold">0</button>
+                    <button onclick="verifyFinalCode()" class="keypad-btn py-3 rounded-lg font-bold text-emerald-400 text-sm">ВВІД</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCREEN 7: OUTRO / VICTORY -->
+        <section id="screen-outro" class="game-screen flex-col items-center">
+            <div id="outro-container" class="lab-border p-6 md:p-10 rounded-2xl w-full max-w-3xl text-center space-y-6">
+                <!-- Content generated via JavaScript -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DIALOG COMPONENT WITH LARGE READABLE TYPOGRAPHY -->
+    <div id="modal-overlay" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+        <div id="modal-card" class="bg-slate-900 border-2 border-cyan-600 max-w-xl w-full rounded-2xl p-6 md:p-8 shadow-2xl space-y-5 relative overflow-hidden">
+            <div class="flex items-center gap-3 border-b border-slate-800 pb-3">
+                <span id="modal-icon" class="text-3xl">ℹ️</span>
+                <h3 id="modal-title" class="font-tech text-xl md:text-2xl font-extrabold text-cyan-300">СПОВІЩЕННЯ</h3>
+            </div>
+            
+            <p id="modal-body" class="text-base md:text-lg text-slate-100 font-medium leading-relaxed"></p>
+
+            <!-- Trap / Explanatory Note with High Contrast -->
+            <div id="modal-trap-box" class="hidden bg-amber-950/80 border-l-4 border-amber-400 p-4 md:p-5 rounded-xl text-left text-sm md:text-base text-amber-100 font-medium leading-relaxed shadow-lg">
+                <span class="font-bold block mb-2 text-amber-300 text-base md:text-lg flex items-center gap-2">💡 НМТ ПІДКАЗКА / ПОЯСНЕННЯ:</span>
+                <p id="modal-trap-text"></p>
+            </div>
+
+            <button onclick="closeModal()" class="btn-lab font-tech font-bold py-3.5 rounded-xl w-full text-base md:text-lg tracking-wider">
+                ПРОДОВЖИТИ
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* Audio Engine using Web Audio API */
+        let audioCtx = null;
+        let audioMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+        }
+
+        function playTone(freq, type, duration, vol=0.04) {
+            if (audioMuted || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        function sfxClick() { playTone(800, 'sine', 0.05, 0.03); }
+        function sfxSuccess() { playTone(523.25, 'triangle', 0.1, 0.05); setTimeout(() => playTone(659.25, 'triangle', 0.15, 0.05), 80); }
+        function sfxError() { playTone(150, 'sawtooth', 0.25, 0.05); }
+        function sfxUnlock() { playTone(880, 'sine', 0.2, 0.05); setTimeout(() => playTone(1760, 'sine', 0.3, 0.05), 100); }
+
+        function toggleAudio() {
+            audioMuted = !audioMuted;
+            document.getElementById('audio-toggle-btn').innerText = audioMuted ? '🔇' : '🔊';
+        }
+
+        /* Game State Variables */
+        let playerName = "ДОСЛІДНИК";
+        let timeLeft = 20 * 60;
+        let timerInterval = null;
+        let modalCallback = null;
+        let speedMultiplier = 1.0;
+
+        // Code digits assigned to sector completion:
+        const generatedCode = ["3", "7", "4", "2", "8"];
+        let collectedCode = ["", "", "", "", ""];
+        let enteredKeypad = "";
+
+        /* SECTOR 1 DATA: Thermochemistry (4 questions) */
+        const s1Data = [
+            { eq: "CH<sub>4</sub> + 2O<sub>2</sub> → CO<sub>2</sub> + 2H<sub>2</sub>O", type: "exo", trap: false },
+            { eq: "CaCO<sub>3</sub> → CaO + CO<sub>2</sub>", type: "endo", trap: false },
+            { eq: "NaOH + HCl → NaCl + H<sub>2</sub>O", type: "exo", trap: false },
+            { eq: "N<sub>2</sub> + O<sub>2</sub> ⇄ 2NO", type: "endo", trap: true, trapMsg: "Реакція утворення NO з простих речовин — класичний виняток НМТ! Це реакція сполучення, але вона ЕНДОТЕРМІЧНА (-Q)." }
+        ];
+        let s1Idx = 0;
+
+        /* SECTOR 2 DATA: Kinetics (3 questions) */
+        const s2Data = [
+            {
+                eq: "Zn(тв) + 2HCl(р-н) → ZnCl<sub>2</sub> + H<sub>2</sub>↑",
+                q: "Яка з дій НЕ вплине на швидкість цієї хімічної реакції?",
+                opts: ["Подрібнення цинку", "Нагрівання розчину", "Збільшення тиску", "Збільшення концентрації HCl"],
+                ans: 2,
+                trapMsg: "Зміна тиску впливає на швидкість ТІЛЬКИ якщо серед ВЕРХНІХ РЕАГЕНТІВ є гази. Тут цинк твердий, а кислота — розчин!"
+            },
+            {
+                eq: "2SO<sub>2</sub>(г) + O<sub>2</sub>(г) ⇄ 2SO<sub>3</sub>(г)",
+                q: "Як зміниться швидкість ПРЯМОЇ реакції, якщо концентрацію SO<sub>2</sub> збільшити в 3 рази?",
+                opts: ["Збільшиться в 3 рази", "Збільшиться в 6 разів", "Збільшиться в 9 разів", "Збільшиться в 27 разів"],
+                ans: 2,
+                trapMsg: "За законом діючих мас v = k · [SO₂]² · [O₂]. Оскільки коефіцієнт SO₂ дорівнює 2, збільшення в 3 рази дає 3² = 9 разів!"
+            },
+            {
+                eq: "2NO(г) + O<sub>2</sub>(г) → 2NO<sub>2</sub>(г)",
+                q: "У скільки разів зросте швидкість реакції при збільшенні ТИСКУ в системі у 2 рази?",
+                opts: ["У 2 рази", "У 4 рази", "У 6 разів", "У 8 разів"],
+                ans: 3,
+                trapMsg: "Збільшення тиску в 2 рази збільшує концентрацію кожного газу у 2 рази. v = k · [NO]² · [O₂] → 2² · 2¹ = 8 разів!"
+            }
+        ];
+        let s2Idx = 0;
+
+        /* KINETIC CANVAS SIMULATION ENGINE */
+        let kineticAnimId = null;
+        function initKineticCanvas() {
+            const canvas = document.getElementById('kinetic-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth || 300;
+            canvas.height = container.clientHeight || 200;
+
+            let particles = [];
+            const numParticles = 24;
+
+            for (let i = 0; i < numParticles; i++) {
+                particles.push({
+                    x: Math.random() * (canvas.width - 20) + 10,
+                    y: Math.random() * (canvas.height - 20) + 10,
+                    vx: (Math.random() - 0.5) * 2.5,
+                    vy: (Math.random() - 0.5) * 2.5,
+                    radius: Math.random() * 4 + 4,
+                    color: i % 2 === 0 ? '#00f0ff' : '#10b981'
+                });
+            }
+
+            if (kineticAnimId) cancelAnimationFrame(kineticAnimId);
+
+            function animate() {
+                if (!document.getElementById('screen-sector-2').classList.contains('active')) return;
+
+                ctx.fillStyle = 'rgba(3, 7, 18, 0.35)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw background grid lines
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
+                ctx.lineWidth = 1;
+                for(let x = 0; x < canvas.width; x += 24) {
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+                for(let y = 0; y < canvas.height; y += 24) {
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                }
+
+                // Update & draw particles
+                for (let i = 0; i < particles.length; i++) {
+                    let p = particles[i];
+                    p.x += p.vx * speedMultiplier;
+                    p.y += p.vy * speedMultiplier;
+
+                    if (p.x - p.radius < 0 || p.x + p.radius > canvas.width) p.vx *= -1;
+                    if (p.y - p.radius < 0 || p.y + p.radius > canvas.height) p.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.shadowColor = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    // Draw collision links
+                    for (let j = i + 1; j < particles.length; j++) {
+                        let p2 = particles[j];
+                        let dx = p2.x - p.x;
+                        let dy = p2.y - p.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 50) {
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(0, 240, 255, ${1 - dist / 50})`;
+                            ctx.lineWidth = 1.2;
+                            ctx.stroke();
+                        }
+                    }
+                }
+
+                kineticAnimId = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        /* SECTOR 3 DATA: Chemical Equilibrium (3 questions) */
+        const s3Data = [
+            {
+                eq: "C(тв) + H<sub>2</sub>O(г) ⇄ CO(г) + H<sub>2</sub>(г) − Q",
+                ans: { temp: 'up', press: 'down', cat: 'no' },
+                trapMsg: "Реакція ендотермічна (-Q), тому підвищуємо температуру. Враховуємо лише ГАЗИ: зліва 1 моль, справа 2 моль. Щоб змістити праворуч, тиск знижуємо."
+            },
+            {
+                eq: "N<sub>2</sub>(г) + 3H<sub>2</sub>(г) ⇄ 2NH<sub>3</sub>(г) + Q",
+                ans: { temp: 'down', press: 'up', cat: 'no' },
+                trapMsg: "Реакція екзотермічна (+Q) — знижуємо температуру. Зліва 4 моль газів, справа 2 моль — підвищуємо тиск!"
+            },
+            {
+                eq: "2SO<sub>2</sub>(г) + O<sub>2</sub>(г) ⇄ 2SO<sub>3</sub>(г) + Q",
+                ans: { temp: 'down', press: 'up', cat: 'no' },
+                trapMsg: "Каталізатор прискорює і пряму, і зворотну реакцію однаково, тому ВІН НІКОЛИ НЕ ЗМІЩУЄ РІВНОВАГУ!"
+            }
+        ];
+        let s3Idx = 0;
+        let eqState = { temp: '', press: '', cat: '' };
+
+        /* SECTOR 4 DATA: Calculations (2 questions) */
+        const s4Data = [
+            {
+                task: "Дано термохімічне рівняння:<br><b class='text-cyan-300 font-code text-xl md:text-2xl block my-2'>2CO(г) + O<sub>2</sub>(г) = 2CO<sub>2</sub>(г); ΔH = −566 кДж</b><br>Обчисліть кількість теплоти (у кДж), що виділиться під час згоряння <b>112 л</b> (н.у.) оксиду вуглецю(II).",
+                unit: "кДж",
+                ans: 1415,
+                expl: "n(CO) = 112 / 22.4 = 5 моль. За рівнянням 2 моль CO виділяє 566 кДж. Otже, Q = (5 · 566) / 2 = 1415 кДж."
+            },
+            {
+                task: "Дано термохімічне рівняння:<br><b class='text-cyan-300 font-code text-xl md:text-2xl block my-2'>C(тв) + O<sub>2</sub>(г) = CO<sub>2</sub>(г); ΔH = −393 кДж</b><br>Обчисліть кількість теплоти (у кДж), що виділиться при згорянні <b>24 г</b> вуглецю (M = 12 г/моль).",
+                unit: "кДж",
+                ans: 786,
+                expl: "n(C) = 24 / 12 = 2 моль. За рівнянням 1 моль C дає 393 кДж, отже 2 моль дасть 2 · 393 = 786 кДж."
+            }
+        ];
+        let s4Idx = 0;
+
+        /* SECTOR 5 DATA: Master Synthesis (3 complex questions) */
+        const s5Data = [
+            {
+                title: "СИНТЕЗ ЕСТЕРУ",
+                eq: "CH<sub>3</sub>COOH + C<sub>2</sub>H<sub>5</sub>OH ⇄ CH<sub>3</sub>COOC<sub>2</sub>H<sub>5</sub> + H<sub>2</sub>O",
+                cond: "УМОВА: Реакція естерифікації у присутності конц. H<sub>2</sub>SO<sub>4</sub>",
+                opts: [
+                    "Обміну, гетерогенна, оборотна, каталітична",
+                    "Заміщення, гомогенна, необоротна, некаталітична",
+                    "Обміну, гомогенна, оборотна, каталітична"
+                ],
+                ans: 2,
+                trapMsg: "Усі реагенти — рідини (гомогенна система). Реакція оборотна, а сульфатна кислота виконує роль каталізатора."
+            },
+            {
+                title: "КАТАЛІТИЧНЕ ОКИСНЕННЯ АМІАКУ",
+                eq: "4NH<sub>3</sub>(г) + 5O<sub>2</sub>(г) ⇄ 4NO(г) + 6H<sub>2</sub>O(г) + Q",
+                cond: "УМОВА: Промисловий синтез NO у присутності платинового каталізатора (Pt, t°)",
+                opts: [
+                    "Окисно-відновна, гомогенна, оборотна, екзотермічна, каталітична",
+                    "Сполучення, гетерогенна, необоротна, ендотермічна",
+                    "Заміщення, гомогенна, оборотна, некаталітична"
+                ],
+                ans: 0,
+                trapMsg: "Змінюються ступені окиснення N (-3 → +2) та O (0 → -2) — це ОВР. Всі речовини — гази (гомогенна), процес оборотний, екзотермічний та каталітичний."
+            },
+            {
+                title: "ЙОННИЙ ОБМІН У РОЗЧИНІ",
+                eq: "FeCl<sub>3</sub>(р-н) + 3NaOH(р-н) → Fe(OH)<sub>3</sub>↓ + 3NaCl(р-н)",
+                cond: "УМОВА: Зливання розчинів ферум(III) хлориду та натрій гідроксиду",
+                opts: [
+                    "Окисно-відновна, гомогенна, оборотна, некаталітична",
+                    "Йонного обміну, гетерогенна (утворився осад), необоротна, некаталітична",
+                    "Заміщення, гомогенна, необоротна, каталітична"
+                ],
+                ans: 1,
+                trapMsg: "Ступені окиснення не змінюються (це не ОВР, а реакція обміну). Реакція йде до кінця через випадання осаду Fe(OH)₃ (необоротна)."
+            }
+        ];
+        let s5Idx = 0;
+
+        /* UI Helpers */
+        function showScreen(screenId) {
+            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showModal(title, text, trapText = null, callback = null) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-body').innerHTML = text;
+            modalCallback = callback;
+
+            const trapBox = document.getElementById('modal-trap-box');
+            if (trapText) {
+                trapBox.classList.remove('hidden');
+                document.getElementById('modal-trap-text').innerHTML = trapText;
+            } else {
+                trapBox.classList.add('hidden');
+            }
+
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            sfxClick();
+            document.getElementById('modal-overlay').classList.add('hidden');
+            if (modalCallback) {
+                const cb = modalCallback;
+                modalCallback = null;
+                cb();
+            }
+        }
+
+        function updateCodeHUD() {
+            const container = document.getElementById('code-hud-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const span = document.createElement('span');
+                span.className = "w-7 text-center border-b-2 border-cyan-400 font-bold";
+                span.innerText = collectedCode[i] ? collectedCode[i] : "_";
+                container.appendChild(span);
+            }
+        }
+
+        function unlockCodeDigit(sectorNum, digit) {
+            collectedCode[sectorNum - 1] = digit;
+            updateCodeHUD();
+            sfxUnlock();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const s = (timeLeft % 60).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${m}:${s}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    finishGame(false, "КИСЕНЬ ВИЧЕРПАНО! СИСТЕМУ АВАРИЙНО ЗАКРИТО.");
+                }
+            }, 1000);
+        }
+
+        /* GAME FLOW CONTROLLERS */
+        function startGame() {
+            initAudio();
+            sfxClick();
+            const inputName = document.getElementById('player-name-input').value.trim();
+            if (inputName) playerName = inputName;
+            document.getElementById('hud-player-name').innerText = playerName;
+
+            document.getElementById('game-hud').classList.remove('hidden');
+            document.getElementById('game-hud').classList.add('flex');
+
+            startTimer();
+            showScreen('screen-sector-1');
+            loadSector1();
+        }
+
+        /* SECTOR 1 LOGIC */
+        function loadSector1() {
+            const item = s1Data[s1Idx];
+            document.getElementById('s1-step-indicator').innerText = `ЕТАП ${s1Idx + 1}/${s1Data.length}`;
+            document.getElementById('s1-progress-bar').style.width = `${((s1Idx + 1) / s1Data.length) * 100}%`;
+            document.getElementById('s1-equation-display').innerHTML = item.eq;
+
+            // Liquid color animation
+            const liquid = document.getElementById('s1-liquid');
+            liquid.style.height = `${40 + s1Idx * 12}%`;
+        }
+
+        function submitSector1(choice) {
+            sfxClick();
+            const item = s1Data[s1Idx];
+            if (choice === item.type) {
+                sfxSuccess();
+                if (item.trap) {
+                    showModal('ЕКСПЕРИМЕНТ УСПІШНИЙ', 'Ви правильно ідентифікували складний виняток!', item.trapMsg, advanceSector1);
+                } else {
+                    advanceSector1();
+                }
+            } else {
+                sfxError();
+                showModal('ПОМИЛКА ТЕРМОАНАЛІЗУ', 'Невірно визначено тепловий ефект.', item.trapMsg || "Зверніть увагу на знак термохімічного рівняння (+Q чи -Q).");
+            }
+        }
+
+        function advanceSector1() {
+            s1Idx++;
+            if (s1Idx < s1Data.length) {
+                loadSector1();
+            } else {
+                unlockCodeDigit(1, generatedCode[0]);
+                showModal('ШЛЮЗ 1 РОЗБЛОКОВАНО', 'ТЕРМОХІМІЧНИЙ МОДУЛЬ ПРОЙДЕНО!<br>Отримано 1-шу цифру шифру.', null, () => {
+                    showScreen('screen-sector-2');
+                    loadSector2();
+                });
+            }
+        }
+
+        /* SECTOR 2 LOGIC */
+        function loadSector2() {
+            const item = s2Data[s2Idx];
+            document.getElementById('s2-step-indicator').innerText = `ЕТАП ${s2Idx + 1}/${s2Data.length}`;
+            document.getElementById('s2-progress-bar').style.width = `${((s2Idx + 1) / s2Data.length) * 100}%`;
+            document.getElementById('s2-equation-display').innerHTML = item.eq;
+            
+            document.getElementById('s2-question-text').innerHTML = item.q;
+
+            speedMultiplier = 1.0 + s2Idx * 0.8;
+            document.getElementById('s2-speed-label').innerText = `ШВИДКІСТЬ: x${speedMultiplier.toFixed(1)}`;
+
+            const optsContainer = document.getElementById('s2-options-container');
+            optsContainer.innerHTML = '';
+            item.opts.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-choice w-full p-4 rounded-xl text-left text-base md:text-lg flex items-center gap-3.5 font-semibold transition-all";
+                btn.onclick = () => selectSector2Opt(idx);
+                btn.innerHTML = `<span class="w-8 h-8 rounded-full border-2 border-cyan-500/60 flex items-center justify-center text-sm text-cyan-300 font-bold font-tech flex-shrink-0">${idx+1}</span> <span>${optText}</span>`;
+                optsContainer.appendChild(btn);
+            });
+
+            setTimeout(initKineticCanvas, 50);
+        }
+
+        let s2Selected = -1;
+        function selectSector2Opt(idx) {
+            sfxClick();
+            s2Selected = idx;
+            const btns = document.querySelectorAll('#s2-options-container button');
+            btns.forEach((b, i) => {
+                if (i === idx) b.classList.add('active');
+                else b.classList.remove('active');
+            });
+        }
+
+        function submitSector2() {
+            if (s2Selected === -1) return;
+            const item = s2Data[s2Idx];
+            if (s2Selected === item.ans) {
+                sfxSuccess();
+                showModal('КІНЕТИЧНИЙ АНАЛІЗ ПІДТВЕРДЖЕНО', 'Правильний розрахунок швидкості хімічної реакції.', item.trapMsg, () => {
+                    s2Selected = -1;
+                    s2Idx++;
+                    if (s2Idx < s2Data.length) {
+                        loadSector2();
+                    } else {
+                        unlockCodeDigit(2, generatedCode[1]);
+                        showModal('ШЛЮЗ 2 РОЗБЛОКОВАНО', 'КІНЕТИЧНИЙ МОДУЛЬ ПРОЙДЕНО!<br>Отримано 2-гу цифру шифру.', null, () => {
+                            showScreen('screen-sector-3');
+                            loadSector3();
+                        });
+                    }
+                });
+            } else {
+                sfxError();
+                showModal('ПОМИЛКА КІНЕТИКИ', 'Неправильний вибір чинника швидкості.', item.trapMsg);
+            }
+        }
+
+        /* SECTOR 3 LOGIC */
+        function loadSector3() {
+            const item = s3Data[s3Idx];
+            document.getElementById('s3-step-indicator').innerText = `ЕТАП ${s3Idx + 1}/${s3Data.length}`;
+            document.getElementById('s3-progress-bar').style.width = `${((s3Idx + 1) / s3Data.length) * 100}%`;
+            document.getElementById('s3-equation-display').innerHTML = item.eq;
+
+            eqState = { temp: '', press: '', cat: '' };
+            updateSector3UI();
+        }
+
+        function setSector3Param(param, val) {
+            sfxClick();
+            eqState[param] = val;
+            updateSector3UI();
+        }
+
+        function updateSector3UI() {
+            const resetGroup = (prefix) => {
+                document.querySelectorAll(`[id^="${prefix}"]`).forEach(b => b.classList.remove('active'));
+            };
+
+            resetGroup('s3-btn-t-');
+            resetGroup('s3-btn-p-');
+            resetGroup('s3-btn-c-');
+
+            if (eqState.temp) document.getElementById(`s3-btn-t-${eqState.temp}`)?.classList.add('active');
+            if (eqState.press) document.getElementById(`s3-btn-p-${eqState.press}`)?.classList.add('active');
+            if (eqState.cat) document.getElementById(`s3-btn-c-${eqState.cat}`)?.classList.add('active');
+
+            // Gauge needle animation
+            const tNeedle = document.getElementById('gauge-temp-needle');
+            const pNeedle = document.getElementById('gauge-press-needle');
+
+            tNeedle.style.transform = eqState.temp === 'up' ? 'rotate(45deg)' : (eqState.temp === 'down' ? 'rotate(-45deg)' : 'rotate(0deg)');
+            pNeedle.style.transform = eqState.press === 'up' ? 'rotate(45deg)' : (eqState.press === 'down' ? 'rotate(-45deg)' : 'rotate(0deg)');
+        }
+
+        function submitSector3() {
+            if (!eqState.temp || !eqState.press || !eqState.cat) return;
+            const item = s3Data[s3Idx];
+
+            if (eqState.cat === 'yes') {
+                sfxError();
+                showModal('КРИТИЧНИЙ ЗБІЙ РІВНОВАГИ', 'Каталізатор прискорює пряму та зворотну реакцію ОДНАКОВО і НІКОЛИ не зміщує хімічну рівновагу!');
+                return;
+            }
+
+            if (eqState.temp === item.ans.temp && eqState.press === item.ans.press) {
+                sfxSuccess();
+                showModal('РІВНОВАГУ СТАБІЛІЗОВАНО', 'Параметри зміщення обрано правильно.', item.trapMsg, () => {
+                    s3Idx++;
+                    if (s3Idx < s3Data.length) {
+                        loadSector3();
+                    } else {
+                        unlockCodeDigit(3, generatedCode[2]);
+                        showModal('ШЛЮЗ 3 РОЗБЛОКОВАНО', 'МОДУЛЬ РІВНОВАГИ ПРОЙДЕНО!<br>Отримано 3-тю цифру шифру.', null, () => {
+                            showScreen('screen-sector-4');
+                            loadSector4();
+                        });
+                    }
+                });
+            } else {
+                sfxError();
+                showModal('ПОМИЛКА РІВНОВАГИ', 'Зазначені зміни параметрів зміщують рівновагу ліворуч або не дають потрібного виходу.', item.trapMsg);
+            }
+        }
+
+        /* SECTOR 4 LOGIC */
+        function loadSector4() {
+            const item = s4Data[s4Idx];
+            document.getElementById('s4-step-indicator').innerText = `ЕТАП ${s4Idx + 1}/${s4Data.length}`;
+            document.getElementById('s4-progress-bar').style.width = `${((s4Idx + 1) / s4Data.length) * 100}%`;
+            document.getElementById('s4-task-box').innerHTML = item.task;
+            document.getElementById('s4-unit-label').innerText = item.unit;
+            document.getElementById('s4-answer-input').value = '';
+        }
+
+        function submitSector4() {
+            const val = parseFloat(document.getElementById('s4-answer-input').value);
+            const item = s4Data[s4Idx];
+
+            if (val === item.ans) {
+                sfxSuccess();
+                showModal('ОБЧИСЛЕННЯ ПІДТВЕРДЖЕНО', item.expl, null, () => {
+                    s4Idx++;
+                    if (s4Idx < s4Data.length) {
+                        loadSector4();
+                    } else {
+                        unlockCodeDigit(4, generatedCode[3]);
+                        showModal('ШЛЮЗ 4 РОЗБЛОКОВАНО', 'ОБЧИСЛЮВАЛЬНИЙ МОДУЛЬ ПРОЙДЕНО!<br>Отримано 4-ту цифру шифру.', null, () => {
+                            showScreen('screen-sector-5');
+                            loadSector5();
+                        });
+                    }
+                });
+            } else {
+                sfxError();
+                showModal('ПОМИЛКА ОБЧИСЛЕННЯ', 'Невірно порахована кількість теплоти. Перевірте молярну масу або молярний об’єм!');
+            }
+        }
+
+        /* SECTOR 5 LOGIC (MULTI-TASK MASTER SYNTHESIS) */
+        let s5Selected = -1;
+        function loadSector5() {
+            const item = s5Data[s5Idx];
+            document.getElementById('s5-step-indicator').innerText = `ЕТАП ${s5Idx + 1}/${s5Data.length}`;
+            document.getElementById('s5-progress-bar').style.width = `${((s5Idx + 1) / s5Data.length) * 100}%`;
+            document.getElementById('s5-reaction-name').innerText = item.title;
+            document.getElementById('s5-condition-tag').innerHTML = item.cond;
+            document.getElementById('s5-equation-display').innerHTML = item.eq;
+
+            const container = document.getElementById('s5-options-container');
+            container.innerHTML = '';
+            s5Selected = -1;
+
+            item.opts.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "btn-choice w-full p-4 rounded-xl text-left text-sm md:text-base flex items-center gap-3.5 font-semibold";
+                btn.onclick = () => {
+                    sfxClick();
+                    s5Selected = idx;
+                    document.querySelectorAll('#s5-options-container button').forEach((b, i) => {
+                        if (i === idx) b.classList.add('active');
+                        else b.classList.remove('active');
+                    });
+                };
+                btn.innerHTML = `<span class="w-7 h-7 rounded-full border-2 border-cyan-500/60 flex items-center justify-center text-xs text-cyan-300 font-bold flex-shrink-0">${idx+1}</span> <span>${optText}</span>`;
+                container.appendChild(btn);
+            });
+        }
+
+        function submitSector5() {
+            if (s5Selected === -1) return;
+            const item = s5Data[s5Idx];
+
+            if (s5Selected === item.ans) {
+                sfxSuccess();
+                showModal('ХАРАКТЕРИСТИКУ СИНТЕЗУ СХВАЛЕНО', 'Усі класифікаційні ознаки визначено правильно.', item.trapMsg, () => {
+                    s5Idx++;
+                    if (s5Idx < s5Data.length) {
+                        loadSector5();
+                    } else {
+                        unlockCodeDigit(5, generatedCode[4]);
+                        showModal('УСІ ШЛЮЗИ ВІДКРИТО!', 'Ви отримали фінальну 5-ту цифру шифру!<br>Переходьте до головного терміналу виходу.', null, () => {
+                            showScreen('screen-final-code');
+                        });
+                    }
+                });
+            } else {
+                sfxError();
+                showModal('ПОМИЛКА КЛАСИФІКАЦІЇ', 'Невірна характеристика реакції.', item.trapMsg);
+            }
+        }
+
+        /* KEYPAD TERMINAL LOGIC */
+        function pressKeypad(num) {
+            sfxClick();
+            if (enteredKeypad.length < 5) {
+                enteredKeypad += num;
+                updateKeypadDisplay();
+            }
+        }
+
+        function clearKeypad() {
+            sfxClick();
+            enteredKeypad = "";
+            updateKeypadDisplay();
+        }
+
+        function updateKeypadDisplay() {
+            for (let i = 0; i < 5; i++) {
+                const input = document.getElementById(`kp-${i}`);
+                input.value = enteredKeypad[i] ? enteredKeypad[i] : "";
+            }
+        }
+
+        function verifyFinalCode() {
+            if (enteredKeypad === generatedCode.join("")) {
+                sfxUnlock();
+                clearInterval(timerInterval);
+                finishGame(true, "БУНКЕР УСПІШНО РОЗБЛОКОВАНО!");
+            } else {
+                sfxError();
+                showModal('ПОМИЛКА ШИФРУ', 'Введений код доступу не збігається з аварійним шифром лабораторії!');
+                clearKeypad();
+            }
+        }
+
+        /* OUTRO / VICTORY LOGIC */
+        function finishGame(isWin, title) {
+            showScreen('screen-outro');
+            const container = document.getElementById('outro-container');
+
+            if (isWin) {
+                container.innerHTML = `
+                    <div class="text-6xl my-2">🏆</div>
+                    <h1 class="text-3xl md:text-4xl font-tech font-bold text-glow-green">${title}</h1>
+                    <p class="text-cyan-300 font-semibold text-base">ДОСЛІДНИК: <span class="font-bold underline">${playerName}</span></p>
+                    
+                    <div class="bg-slate-950 p-6 rounded-xl border border-slate-800 text-left text-sm md:text-base space-y-3 leading-relaxed text-slate-200 shadow-inner">
+                        <p class="text-emerald-400 font-bold text-lg">КЛЮЧОВІ ПРАВИЛА ХІМІЇ ДЛЯ СТАБІЛЬНИХ 200 БАЛІВ НА НМТ:</p>
+                        <ul class="list-disc pl-5 space-y-2">
+                            <li><b>Утворення NO (N₂ + O₂ ⇄ 2NO):</b> Реакція сполучення, але <u>ЕНДОТЕРМІЧНА (-Q)</u>!</li>
+                            <li><b>Вплив тиску:</b> Враховуйте ТІЛЬКИ молі газуватих речовин серед реагентів і продуктів.</li>
+                            <li><b>Каталізатор:</b> Прискорює пряму та зворотну реакцію однаково — <u>НЕ зміщує рівновагу</u>!</li>
+                            <li><b>Тепловий ефект (ΔH):</b> Завжди розраховуйте пропорцію за кількості речовини (молі) та коефіцієнтами рівняння.</li>
+                        </ul>
+                    </div>
+
+                    <button onclick="location.reload()" class="btn-lab font-tech font-bold py-4 px-10 rounded-xl text-lg">
+                        ПРОЙТИ ЗНОВУ
+                    </button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="text-6xl my-2">☣️</div>
+                    <h1 class="text-3xl font-tech font-bold text-glow-red">${title}</h1>
+                    <p class="text-slate-300 font-semibold text-base mb-6">СИСТЕМА ВЕНТИЛЯЦІЇ БЛОКОВАНА.</p>
+                    <button onclick="location.reload()" class="btn-lab font-tech font-bold py-4 px-10 rounded-xl text-lg">
+                        СПРОБУВАТИ ЗНОВУ
+                    </button>
+                `;
+            }
+        }
+
+        // Auto-resize canvas listener
+        window.addEventListener('resize', () => {
+            if (document.getElementById('screen-sector-2').classList.contains('active')) {
+                initKineticCanvas();
+            }
+        });
+    </script>
+</body>
+</html>
